@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { WechatyBuilder } from 'wechaty'
 import { ContactInterface, WechatyInterface } from 'wechaty/impls'
+import { Response } from 'express'
+
 export type RoomList = {
   titleList: string[]
   receivedContent: string
@@ -15,28 +17,39 @@ export class AppService {
     this.init()
   }
   init() {
-    const wechaty = WechatyBuilder.build()
-    wechaty
+    this.boot = WechatyBuilder.build()
+    this.boot
       .on('scan', (qrcode, status) => {
         const scanLink = `${status}\nhttps://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`
         console.log(`Scan QR Code to login: ${scanLink}`)
         this.scanLink = scanLink
       })
       .on('login', user => console.log(`User ${user} logged in`))
-      .on('message', message => console.log(`Message: ${message}`))
-    wechaty.start()
-    this.boot = wechaty
+    // .on('message', message => console.log(`Message: ${message}`))
+    this.boot.start()
   }
 
-  getHello(): string {
-    return 'Hello World!'
+  async login(): Promise<string> {
+    return new Promise(res => {
+      this.boot
+        .on('scan', (qrcode, status) => {
+          const scanLink = `${status}\nhttps://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`
+          console.log(`Scan QR Code to login: ${scanLink}`)
+          this.scanLink = scanLink
+          res(scanLink)
+        })
+        .on('login', user => console.log(`User ${user} logged in`))
+      this.boot.reset()
+    })
   }
 
-  getBot() {
-    if (this.boot) {
-      return this.boot
+  async getBot(res: Response) {
+    if (this.boot.isLoggedIn) {
+      return JSON.stringify(this.boot.currentUser)
     } else {
-      return this.scanLink
+      const link = await this.login()
+      console.log(link)
+      res.redirect(link.split('\n')[1])
     }
   }
 
