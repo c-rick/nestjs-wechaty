@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common'
 import { WechatyBuilder } from 'wechaty'
 import { ContactInterface, WechatyInterface } from 'wechaty/impls'
 export type RoomList = {
-  "titleList": string[],
-  "receivedContent": string,
-  "atList":  string[]
+  titleList: string[]
+  receivedContent: string
+  atList: string[]
 }[]
 @Injectable()
 export class AppService {
@@ -14,7 +14,7 @@ export class AppService {
   constructor() {
     this.init()
   }
-  init () {
+  init() {
     const wechaty = WechatyBuilder.build()
     wechaty
       .on('scan', (qrcode, status) => {
@@ -22,17 +22,17 @@ export class AppService {
         console.log(`Scan QR Code to login: ${scanLink}`)
         this.scanLink = scanLink
       })
-      .on('login',            user => console.log(`User ${user} logged in`))
-      .on('message',       message => console.log(`Message: ${message}`))
+      .on('login', user => console.log(`User ${user} logged in`))
+      .on('message', message => console.log(`Message: ${message}`))
     wechaty.start()
     this.boot = wechaty
   }
 
   getHello(): string {
-    return 'Hello World!';
+    return 'Hello World!'
   }
 
-  getBot () {
+  getBot() {
     if (this.boot) {
       return this.boot
     } else {
@@ -40,33 +40,31 @@ export class AppService {
     }
   }
 
-  async sendMsg (user: string, msg: string) {
+  async sendMsg(user: string, msg: string) {
     try {
-      const contact = await this.boot.Contact.find({name: user})
+      const contact = await this.boot.Contact.find({ name: user })
       const res = await contact?.say(msg)
       console.log(res)
-    } catch(err) {
+    } catch (err) {
       console.log(`send msg ${err}`)
     }
   }
-  async sendRoomMsg (list: RoomList) {
+  async sendRoomMsg(list: RoomList) {
     try {
-      for (let r of list) {
-        const room = await this.boot.Room.find({topic: r.titleList[0]})
+      for (const r of list) {
+        const room = await this.boot.Room.find({ topic: r.titleList[0] })
         const contacts = await this.getContacts(r.atList)
         const res = await room?.say(r.receivedContent, ...contacts)
-
         console.log(res)
       }
-      
-    } catch(err) {
+    } catch (err) {
       console.log(`send msg ${err}`)
     }
   }
-  
-  async getContacts (names: string[]): Promise<ContactInterface[]> {
-    let contacts = []
-    for (let n of names) {
+
+  async getContacts(names: string[]): Promise<ContactInterface[]> {
+    const contacts = []
+    for (const n of names) {
       const c = await this.boot.Contact.find({ name: n })
       if (c) {
         contacts.push(c)
