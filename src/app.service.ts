@@ -18,19 +18,20 @@ export class AppService {
   }
   init() {
     this.boot = WechatyBuilder.build()
-    this.boot
-      .on('scan', (qrcode, status) => {
-        const scanLink = `${status}\nhttps://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`
-        console.log(`Scan QR Code to login: ${scanLink}`)
-        this.scanLink = scanLink
-      })
-      .on('login', user => console.log(`User ${user} logged in`))
+    // this.boot
+    //   .on('scan', (qrcode, status) => {
+    //     const scanLink = `${status}\nhttps://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`
+    //     console.log(`Scan QR Code to login: ${scanLink}`)
+    //     this.scanLink = scanLink
+    //   })
+    //   .on('login', user => console.log(`User ${user} logged in`))
     // .on('message', message => console.log(`Message: ${message}`))
     this.boot.start()
   }
 
-  async login(): Promise<string> {
+  async login(force?: string): Promise<string> {
     return new Promise(res => {
+      if (this.boot.isLoggedIn && !force) return res(JSON.stringify(this.boot.currentUser))
       this.boot
         .on('scan', (qrcode, status) => {
           const scanLink = `${status}\nhttps://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`
@@ -38,14 +39,20 @@ export class AppService {
           this.scanLink = scanLink
           res(scanLink)
         })
-        .on('login', user => console.log(`User ${user} logged in`))
+        .on('login', user => {
+          console.log(`User ${user} logged in`)
+          this.logined = true
+        })
+        .on('logout', () => {
+          this.logined = false
+        })
       this.boot.reset()
     })
   }
 
   async getBot(res: Response) {
-    if (this.boot.isLoggedIn) {
-      return JSON.stringify(this.boot.currentUser)
+    if (this.boot.isLoggedIn && this.logined) {
+      res.send(JSON.stringify(this.boot.currentUser))
     } else {
       const link = await this.login()
       console.log(link)
