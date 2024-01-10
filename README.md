@@ -28,11 +28,7 @@ $ yarn run start:prod
 | path      | argument |
 | ----------- | ----------- |
 | /send      | {user: string; msg: string}       |
-| /sendRoom   | {list: RoomList}  RoomList: {
-  "titleList": string[],
-  "receivedContent": string,
-  "atList": string[]
-}[]      |
+| /sendRoom   | {list: {titleList: string[],receivedContent: string,atList: string[]}[]}      |
 
 ## License
 
