@@ -3,16 +3,21 @@ import { AppService, RoomList } from './app.service'
 import { Response } from 'express'
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @Get()
   async main(@Res() res: Response) {
-    await this.appService.getBot(res)
+    return await this.appService.getBot(res)
   }
 
   @Get('login')
-  async login(@Query('force') force?: string): Promise<string> {
-    return await this.appService.login(force)
+  async login(@Res() res: Response, @Query('force') force?: string) {
+    const link = await this.appService.login(force)
+    if (force) {
+      res.redirect(link.split('\n')[1])
+    } else {
+      res.send(link)
+    }
   }
 
   @Post('send')

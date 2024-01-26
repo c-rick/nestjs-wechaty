@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { WechatyBuilder } from 'wechaty'
 import { ContactInterface, WechatyInterface } from 'wechaty/impls'
 import { Response } from 'express'
+import { Email } from './common/emailTool'
 
 export type RoomList = {
   titleList: string[]
@@ -13,49 +14,54 @@ export class AppService {
   boot: WechatyInterface
   logined = false
   scanLink = ''
+  email: Email
   constructor() {
     this.init()
   }
   init() {
-    this.boot = WechatyBuilder.build()
-    // this.boot
-    //   .on('scan', (qrcode, status) => {
-    //     const scanLink = `${status}\nhttps://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`
-    //     console.log(`Scan QR Code to login: ${scanLink}`)
-    //     this.scanLink = scanLink
-    //   })
-    //   .on('login', user => console.log(`User ${user} logged in`))
-    // .on('message', message => console.log(`Message: ${message}`))
-    this.boot.start()
+    this.email = new Email()
   }
 
   async login(force?: string): Promise<string> {
     return new Promise(res => {
-      if (this.boot.isLoggedIn && !force) return res(JSON.stringify(this.boot.currentUser))
+      if (this.logined && !force) {
+        res(JSON.stringify(this.boot.currentUser))
+        return
+      }
+      this.boot = WechatyBuilder.build()
       this.boot
         .on('scan', (qrcode, status) => {
           const scanLink = `${status}\nhttps://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`
-          console.log(`Scan QR Code to login: ${scanLink}`)
+          Logger.log(`Scan QR Code to login: ${scanLink}`)
           this.scanLink = scanLink
           res(scanLink)
         })
-        .on('login', user => {
-          console.log(`User ${user} logged in`)
+        .on('login', async user => {
+          const alias = await user?.alias()
+          const logText = `User ${alias} logged in`
+          Logger.log(logText)
+          this.notifyEmail(logText)
           this.logined = true
         })
-        .on('logout', () => {
+        .on('logout', async () => {
           this.logined = false
+          const logText = `boot logined is ${this.logined}`
+          Logger.log(logText)
+          this.notifyEmail(logText)
+          this.boot.stop()
         })
-      this.boot.reset()
+        .on('error', err => {
+          console.log(err)
+        })
+      this.boot.start()
     })
   }
 
   async getBot(res: Response) {
-    if (this.boot.isLoggedIn && this.logined) {
+    if (this.boot && this.logined) {
       res.send(JSON.stringify(this.boot.currentUser))
     } else {
       const link = await this.login()
-      console.log(link)
       res.redirect(link.split('\n')[1])
     }
   }
@@ -63,8 +69,8 @@ export class AppService {
   async sendMsg(user: string, msg: string) {
     try {
       const contact = await this.boot.Contact.find({ name: user })
-      const res = await contact?.say(msg)
-      console.log(res)
+      await contact?.say(msg)
+      Logger.log(`success send msg to ${user}`)
     } catch (err) {
       console.log(`send msg ${err}`)
     }
@@ -74,8 +80,9 @@ export class AppService {
       for (const r of list) {
         const room = await this.boot.Room.find({ topic: r.titleList[0] })
         const contacts = await this.getContacts(r.atList)
-        const res = await room?.say(r.receivedContent, ...contacts)
-        console.log(res)
+        await room?.say(r.receivedContent, ...contacts)
+
+        Logger.log(`success send msg to ${r.titleList[0]}`)
       }
     } catch (err) {
       console.log(`send msg ${err}`)
@@ -91,5 +98,12 @@ export class AppService {
       }
     }
     return contacts
+  }
+
+  async notifyEmail(message) {
+    this.email.send({
+      email: process.env.NOTIFYEMAIL,
+      text: message,
+    })
   }
 }
