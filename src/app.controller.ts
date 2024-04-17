@@ -7,7 +7,12 @@ export class AppController {
 
   @Get()
   async main(@Res() res: Response) {
-    return await this.appService.getBot(res)
+    const boot = await this.appService.getBot()
+    if (boot.match('https://wechaty.js.org')) {
+      res.redirect(boot)
+    } else {
+      res.send(boot)
+    }
   }
 
   @Get('login')

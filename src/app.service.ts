@@ -24,7 +24,7 @@ export class AppService {
 
   async login(force?: string): Promise<string> {
     return new Promise(res => {
-      if (this.boot && this.logined && !force) {
+      if (this.logined && !force) {
         res(JSON.stringify(this.boot.currentUser))
         return
       }
@@ -37,18 +37,23 @@ export class AppService {
           res(scanLink)
         })
         .on('login', async user => {
-          const alias = await user?.alias()
-          const logText = `User ${alias} logged in`
-          Logger.log(logText)
-          this.notifyEmail(logText)
-          this.logined = true
+          try {
+            console.log(user, 'user')
+            // const alias = await user?.alias()
+            const logText = `User logged in`
+            Logger.log(logText)
+            this.notifyEmail(logText)
+            this.logined = true
+          } catch (err) {
+            console.log('err', err)
+          }
         })
         .on('logout', async () => {
           this.logined = false
           const logText = `boot logined is ${this.logined}`
           Logger.log(logText)
           this.notifyEmail(logText)
-          this.boot.stop()
+          // this.boot.stop()
         })
         .on('error', err => {
           console.log(err)
@@ -57,12 +62,12 @@ export class AppService {
     })
   }
 
-  async getBot(res: Response) {
+  async getBot() {
     if (this.boot && this.logined) {
-      res.send(JSON.stringify(this.boot.currentUser))
+      return JSON.stringify(this.boot.currentUser)
     } else {
       const link = await this.login()
-      res.redirect(link)
+      return link
     }
   }
 
