@@ -16,7 +16,11 @@ export class AppController {
     if (force) {
       res.redirect(link.split('\n')[1])
     } else {
-      res.send(link)
+      if (link.match('https://wechaty.js.org')) {
+        res.redirect(link)
+      } else {
+        res.send(link)
+      }
     }
   }
 

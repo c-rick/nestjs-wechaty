@@ -24,14 +24,14 @@ export class AppService {
 
   async login(force?: string): Promise<string> {
     return new Promise(res => {
-      if (this.logined && !force) {
+      if (this.boot && this.logined && !force) {
         res(JSON.stringify(this.boot.currentUser))
         return
       }
       this.boot = WechatyBuilder.build()
       this.boot
-        .on('scan', (qrcode, status) => {
-          const scanLink = `${status}\nhttps://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`
+        .on('scan', qrcode => {
+          const scanLink = `https://wechaty.js.org/qrcode/${encodeURIComponent(qrcode)}`
           Logger.log(`Scan QR Code to login: ${scanLink}`)
           this.scanLink = scanLink
           res(scanLink)
@@ -62,7 +62,7 @@ export class AppService {
       res.send(JSON.stringify(this.boot.currentUser))
     } else {
       const link = await this.login()
-      res.redirect(link.split('\n')[1])
+      res.redirect(link)
     }
   }
 
@@ -79,6 +79,7 @@ export class AppService {
     try {
       for (const r of list) {
         const room = await this.boot.Room.find({ topic: r.titleList[0] })
+        console.log(r.atList)
         const contacts = await this.getContacts(r.atList || [])
         await room?.say(r.receivedContent, ...contacts)
 
