@@ -70,8 +70,5 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
-  },
-  "resolutions": {
-    "string-width": "4.1.0"
   }
 }
