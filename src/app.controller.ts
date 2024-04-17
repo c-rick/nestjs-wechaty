@@ -27,6 +27,6 @@ export class AppController {
 
   @Post('sendRoom')
   sendRoomMsg(@Body() body: { list: RoomList }) {
-    return this.appService.sendRoomMsg(body.list)
+    return this.appService.sendRoomMsg(body.list || [])
   }
 }

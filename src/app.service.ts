@@ -75,11 +75,11 @@ export class AppService {
       console.log(`send msg ${err}`)
     }
   }
-  async sendRoomMsg(list: RoomList) {
+  async sendRoomMsg(list: RoomList = []) {
     try {
       for (const r of list) {
         const room = await this.boot.Room.find({ topic: r.titleList[0] })
-        const contacts = await this.getContacts(r.atList)
+        const contacts = await this.getContacts(r.atList || [])
         await room?.say(r.receivedContent, ...contacts)
 
         Logger.log(`success send msg to ${r.titleList[0]}`)
@@ -89,7 +89,7 @@ export class AppService {
     }
   }
 
-  async getContacts(names: string[]): Promise<ContactInterface[]> {
+  async getContacts(names: string[] = []): Promise<ContactInterface[]> {
     const contacts = []
     for (const n of names) {
       const c = await this.boot.Contact.find({ name: n })
